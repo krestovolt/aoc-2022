@@ -1,12 +1,12 @@
 use std::{
     collections::BTreeMap,
     fs::File,
-    io::{BufRead, BufReader},
+    io::{BufRead, BufReader, Lines},
 };
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 struct ElveRank {
-    total_calories: i64,
+    total_cal: i64,
     total_snack: i64,
 }
 
@@ -14,6 +14,25 @@ fn main() {
     let file = File::open("./input-1").unwrap();
     let reader = BufReader::new(file);
 
+    let elve_list: BTreeMap<ElveRank, i32> = process_sorted(reader.lines());
+
+    println!("{:=>10}", "");
+    let mut top_sum = 0;
+    let mut iter = elve_list.iter().rev();
+    for i in 1..4 {
+        let el = iter.next().unwrap();
+        let rank = el.0;
+        let elv_id = el.1;
+        top_sum += rank.total_cal;
+        println!(
+            "#{:0>3} elve_id={:<4} total_snack={:<4} total_cal={:<12}",
+            i, elv_id, rank.total_snack, rank.total_cal
+        )
+    }
+    println!("total={top_sum}")
+}
+
+fn process_sorted(input: Lines<impl BufRead>) -> BTreeMap<ElveRank, i32> {
     let mut elve_list: BTreeMap<ElveRank, i32> = BTreeMap::new();
 
     {
@@ -21,7 +40,7 @@ fn main() {
         let mut sn_cnt = 0_i64;
         let mut cal_sum = 0_i64;
 
-        for line in reader.lines() {
+        for line in input {
             let l = line.unwrap();
 
             if l == "" {
@@ -29,7 +48,7 @@ fn main() {
 
                 elve_list.insert(
                     ElveRank {
-                        total_calories: cal_sum,
+                        total_cal: cal_sum,
                         total_snack: sn_cnt,
                     },
                     elv_n,
@@ -47,14 +66,5 @@ fn main() {
         }
     }
 
-    println!("=============");
-
-    let mut top_sum = 0;
-    let mut iter = elve_list.iter().rev();
-    for i in 1..4 {
-        let el = iter.next().unwrap();
-        top_sum += el.0.total_calories;
-        println!("#{i} elv={} total={:?}", el.1, el.0)
-    }
-    println!("total={top_sum}")
+    elve_list
 }
