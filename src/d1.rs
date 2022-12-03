@@ -12,7 +12,6 @@ struct ElveRank {
 pub fn run(input: Lines<impl BufRead>) {
     let elve_list: BTreeMap<ElveRank, i32> = process_sorted(input);
 
-    println!("{:=>10}", "");
     let mut top_sum = 0;
     let mut iter = elve_list.iter().rev();
     for i in 1..4 {

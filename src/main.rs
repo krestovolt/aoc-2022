@@ -1,4 +1,8 @@
-use std::{fs::File, io::{BufReader, BufRead}};
+use std::{
+    env,
+    fs::File,
+    io::{BufRead, BufReader},
+};
 
 mod common;
 mod d1;
@@ -11,15 +15,30 @@ fn read_file(path: &str) -> BufReader<File> {
 }
 
 fn main() {
-    // Day-1
-    // let input = read_file("input-d1");
-    // d1::run(input.lines());
+    let d = env::args().nth(1).or(Some("1".into())).unwrap();
 
-    // Day-2
-    let input = read_file("input-d2");
-    d2::run(input.lines());
+    println!("Running Day-{}", d);
+    println!("{:=>10}", "");
 
-    // Day-3
-    // let input = read_file("input-d3");
-    // d3::run(input.lines());
+    match d.as_str() {
+        "1" => {
+            // Day-1
+            let input = read_file("input-d1");
+            d1::run(input.lines());
+        }
+
+        "2" => {
+            // Day-2
+            let input = read_file("input-d2");
+            d2::run(input.lines());
+        }
+
+        "3" => {
+            // Day-3
+            let input = read_file("input-d3");
+            d3::run(input.lines());
+        }
+
+        _ => unimplemented!(),
+    }
 }
