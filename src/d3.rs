@@ -3,6 +3,8 @@ use std::{
     io::{BufRead, Lines},
 };
 
+use crate::common;
+
 const CAP_VAL: u8 = b'A';
 const DEC_LOWER: u8 = 31;
 const INC_UPPER: u8 = 27;
@@ -14,7 +16,7 @@ struct Ruck {
 }
 
 pub fn run(input: Lines<impl BufRead>) {
-    let strs = parse(input);
+    let strs = common::parse(input);
 
     let rucks = process(&strs);
     let rucks_2 = process_2(&strs);
@@ -24,19 +26,6 @@ pub fn run(input: Lines<impl BufRead>) {
 
     println!("sum of priorities: {}", sum_p);
     println!("sum of priorities (3-part): {}", sum_p3)
-}
-
-fn parse(lines: Lines<impl BufRead>) -> Vec<String> {
-    let mut vs = vec![];
-    for line in lines {
-        let l = line.unwrap();
-        if l == "" {
-            break;
-        }
-        vs.push(l)
-    }
-    println!("len={} partition={}", vs.len(), vs.len() / 3);
-    vs
 }
 
 fn compute(rucks: &[Ruck]) -> i32 {
