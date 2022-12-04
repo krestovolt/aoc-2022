@@ -8,6 +8,9 @@ mod common;
 mod d1;
 mod d2;
 mod d3;
+mod d4;
+
+const LATEST_DAY: &str = "4";
 
 fn read_file(path: &str) -> BufReader<File> {
     let file = File::open(path).unwrap();
@@ -15,7 +18,7 @@ fn read_file(path: &str) -> BufReader<File> {
 }
 
 fn main() {
-    let d = env::args().nth(1).or(Some("1".into())).unwrap();
+    let d = env::args().nth(1).or(Some(LATEST_DAY.into())).unwrap();
 
     println!("Running Day-{}", d);
     println!("{:=>10}", "");
@@ -37,6 +40,12 @@ fn main() {
             // Day-3
             let input = read_file("input-d3");
             d3::run(input.lines());
+        }
+
+        "4" => {
+            // Day-3
+            let input = read_file("input-d4");
+            d4::run(input.lines());
         }
 
         _ => unimplemented!(),
