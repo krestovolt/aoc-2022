@@ -2,7 +2,10 @@ use std::io::{BufRead, Lines};
 
 use crate::common;
 
-const CYCLE_INCR: i32 = 40;
+const SCREEN_W: usize = 40;
+const SCREEN_H: usize = 6;
+const SCREEN_DIM: usize = SCREEN_W * SCREEN_H;
+const CYCLE_INCR: usize = 40;
 
 enum OpCode {
     Noop,
@@ -13,11 +16,22 @@ enum OpCode {
 pub fn run(input: Lines<impl BufRead>) {
     let lines = common::parse(input);
     let ops = process(&lines);
-    let sum = compute(&ops);
+    let mut pixels: [char; SCREEN_DIM] = ['.'; SCREEN_DIM];
+    let sum = compute(&ops, &mut pixels);
     println!("sum: {}", sum);
+    render(pixels);
 }
 
-fn compute(ops: &[OpCode]) -> i32 {
+fn render(pixels: [char; SCREEN_DIM]) {
+    for r in 0..SCREEN_H {
+        for c in 0..SCREEN_W {
+            print!("{}", pixels[c + (r * SCREEN_W)]);
+        }
+        println!("");
+    }
+}
+
+fn compute(ops: &[OpCode], pixels_out: &mut [char; SCREEN_DIM]) -> i32 {
     let mut sum = 0;
 
     let mut pc = 0;
@@ -29,8 +43,6 @@ fn compute(ops: &[OpCode]) -> i32 {
         .into_iter()
         .collect();
 
-    let mut pixels = vec!['.'; 40 * 6];
-
     for op in ops {
         print!("pc={:03} | ", pc);
         match op {
@@ -40,7 +52,7 @@ fn compute(ops: &[OpCode]) -> i32 {
                 if reg_x - 1 >= 0 {
                     sm[(reg_x - 1) as usize] = '.';
                 }
-                if reg_x >=0 {
+                if reg_x >= 0 {
                     sm[(reg_x + 0) as usize] = '.';
                 }
                 if ((reg_x + 1) as usize) < sm.len() {
@@ -62,25 +74,18 @@ fn compute(ops: &[OpCode]) -> i32 {
 
             OpCode::Noop | OpCode::Skip => {
                 let s = &sprites;
-                let pm = &mut pixels;
-                println!("noop");
-                pm[pc as usize] = s[(pc % 40) as usize];
+                pixels_out[pc as usize] = s[(pc % SCREEN_W) as usize];
                 pc += 1;
+
+                println!("noop");
             }
         }
 
         if checkpoint == pc {
-            let sig_strength = pc * reg_x;
+            let sig_strength = (pc as i32) * reg_x;
             checkpoint += CYCLE_INCR;
             sum += sig_strength
         }
-    }
-
-    for r in 0..6 {
-        for c in 0..40 {
-            print!("{}", pixels[c + (r * 40)])
-        }
-        println!("");
     }
 
     sum
