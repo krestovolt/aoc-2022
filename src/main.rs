@@ -5,15 +5,15 @@ use std::{
 };
 
 mod common;
-mod d1;
-mod d2;
-mod d3;
-mod d4;
-mod d5;
-mod d6;
-mod d7;
-mod d8;
-mod d9;
+mod d01;
+mod d02;
+mod d03;
+mod d04;
+mod d05;
+mod d06;
+mod d07;
+mod d08;
+mod d09;
 mod d10;
 
 const LATEST_DAY: &str = "10";
@@ -33,55 +33,55 @@ fn main() {
         "1" => {
             // Day-1
             let input = read_file("input-d1");
-            d1::run(input.lines());
+            d01::run(input.lines());
         }
 
         "2" => {
             // Day-2
             let input = read_file("input-d2");
-            d2::run(input.lines());
+            d02::run(input.lines());
         }
 
         "3" => {
             // Day-3
             let input = read_file("input-d3");
-            d3::run(input.lines());
+            d03::run(input.lines());
         }
 
         "4" => {
             // Day-4
             let input = read_file("input-d4");
-            d4::run(input.lines());
+            d04::run(input.lines());
         }
 
         "5" => {
             // Day-5
             let input = read_file("input-d5");
-            d5::run(input.lines());
+            d05::run(input.lines());
         }
 
         "6" => {
             // Day-6
             let input = read_file("input-d6");
-            d6::run(input.lines());
+            d06::run(input.lines());
         }
 
         "7" => {
             // Day-7
             let input = read_file("input-d7");
-            d7::run(input.lines());
+            d07::run(input.lines());
         }
 
         "8" => {
             // Day-8
             let input = read_file("input-d8");
-            d8::run(input.lines());
+            d08::run(input.lines());
         }
 
         "9" => {
             // Day-9
             let input = read_file("input-d9");
-            d9::run(input.lines());
+            d09::run(input.lines());
         }
 
         "10" => {
