@@ -25,7 +25,12 @@ pub fn run(input: Lines<impl BufRead>) {
 fn render(pixels: [char; SCREEN_DIM]) {
     for r in 0..SCREEN_H {
         for c in 0..SCREEN_W {
-            print!("{}", pixels[c + (r * SCREEN_W)]);
+            let p = if pixels[c + (r * SCREEN_W)] == '#' {
+                "#"
+            } else {
+                " "
+            };
+            print!("{}", p);
         }
         println!("");
     }

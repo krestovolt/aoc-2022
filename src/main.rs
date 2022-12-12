@@ -15,8 +15,9 @@ mod d07;
 mod d08;
 mod d09;
 mod d10;
+mod d11;
 
-const LATEST_DAY: &str = "10";
+const LATEST_DAY: &str = "11";
 
 fn read_file(path: &str) -> BufReader<File> {
     let file = File::open(path).unwrap();
@@ -89,6 +90,13 @@ fn main() {
             // let input = read_file("input-d10-sample");
             let input = read_file("input-d10");
             d10::run(input.lines());
+        }
+
+        "11" => {
+            // Day-11
+            // let input = read_file("input-d11-sample");
+            let input = read_file("input-d11");
+            d11::run(input.lines());
         }
 
         _ => unimplemented!(),
