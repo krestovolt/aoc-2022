@@ -59,10 +59,10 @@ pub fn run(input: Lines<impl BufRead>) {
 
     let grid = process(&lines);
 
-    let (min_step, path) = compute(&grid, true);
+    let (min_step, _path) = compute(&grid, true);
     println!("p1 - min step = {}", min_step);
 
-    let (min_step, path) = compute(&grid, false);
+    let (min_step, _path) = compute(&grid, false);
     println!("p2 - min step = {}", min_step);
 }
 
