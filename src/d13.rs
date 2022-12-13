@@ -174,17 +174,16 @@ pub fn run(mut input: Lines<impl BufRead>) {
     // [Nest([Num(6)])]
     let div_2 = vec![ListEl::Nest(vec![ListEl::Num(6)])];
 
-    pairs.sort();
-
-    let pos_1 = match pairs.binary_search(&div_1) {
-        Err(pos) => pos + 1,
-        Ok(pos) => pos + 1,
-    };
-
-    let pos_2 = match pairs.binary_search(&div_2) {
-        Err(pos) => pos + 2,
-        Ok(pos) => pos + 2,
-    };
+    let mut pos_1 = 1;
+    let mut pos_2 = pos_1 + 1;
+    for p in pairs {
+        if let Ordering::Less | Ordering::Equal = p.cmp(&div_1) {
+            pos_1 += 1;
+        }
+        if let Ordering::Less | Ordering::Equal = p.cmp(&div_2) {
+            pos_2 += 1;
+        }
+    }
 
     // for p in pairs {
     //     println!("{:?}", p);
