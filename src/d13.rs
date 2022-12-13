@@ -1,13 +1,13 @@
 use std::{
     cmp::Ordering,
-    fmt::Display,
+    fmt::{Debug, Display},
     io::{BufRead, Lines},
     slice,
 };
 
 use crate::common;
 
-#[derive(Debug, Eq)]
+#[derive(Clone, Eq)]
 enum ListEl {
     Num(i32),
     Nest(Vec<ListEl>),
@@ -19,7 +19,7 @@ impl ListEl {
     /// ## Warning
     /// The `input` is assumed to be properly formatted (no missing `[` or `]`), in case the `input` is not properly formatted,
     /// there will be some undefined-behavior or incorrect parsing result.
-    /// 
+    ///
     /// ## Todo
     /// Add open/close validate
     fn parse(input: &str) -> Vec<ListEl> {
@@ -87,7 +87,7 @@ impl ListEl {
         root
     }
 
-    fn to_slice(&self) -> &[ListEl] {
+    pub fn as_slice(&self) -> &[ListEl] {
         if let ListEl::Nest(v) = self {
             v
         } else {
@@ -101,14 +101,28 @@ impl Display for ListEl {
         match self {
             ListEl::Num(n) => write!(f, "{}", n),
             ListEl::Nest(v) => {
-                for e in v {
-                    if let Err(err) = write!(f, "{}", e) {
+                if let Err(err) = write!(f, "[") {
+                    return Err(err);
+                }
+
+                for i in 0..v.len() {
+                    let sep = if i > 0 { ", " } else { "" };
+                    if let Err(err) = write!(f, "{}{}", sep, v[i]) {
                         return Err(err);
                     }
+                }
+                if let Err(err) = write!(f, "]") {
+                    return Err(err);
                 }
                 Ok(())
             }
         }
+    }
+}
+
+impl Debug for ListEl {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self)
     }
 }
 
@@ -117,7 +131,7 @@ impl Ord for ListEl {
         match (self, other) {
             (ListEl::Num(a), ListEl::Num(b)) => a.cmp(b),
 
-            _ => self.to_slice().cmp(other.to_slice()),
+            _ => self.as_slice().cmp(other.as_slice()),
         }
     }
 }
@@ -142,16 +156,16 @@ pub fn run(mut input: Lines<impl BufRead>) {
     while pair_lines.len() > 0 {
         let (p1, p2, ok) = process(&pair_lines);
 
-        println!("{:?}\n{:?}\n=> #{pn} {}", p1, p2, ok);
         if ok {
             sum += pn;
         }
+
+        println!("{:?}\n{:?}\n=> #{pn} {}", p1, p2, ok);
 
         pairs.push(p1);
         pairs.push(p2);
 
         pair_lines = common::parse_mut(&mut input);
-
         pn += 1;
     }
 
