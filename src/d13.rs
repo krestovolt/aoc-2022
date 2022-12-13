@@ -14,6 +14,14 @@ enum ListEl {
 }
 
 impl ListEl {
+    /// Parses the input string iteratively instead of recursive by using additional `Vec<ListEl>`
+    ///
+    /// ## Warning
+    /// The `input` is assumed to be properly formatted (no missing `[` or `]`), in case the `input` is not properly formatted,
+    /// there will be some undefined-behavior or incorrect parsing result.
+    /// 
+    /// ## Todo
+    /// Add open/close validate
     fn parse(input: &str) -> Vec<ListEl> {
         let mut root: Vec<ListEl> = vec![];
         let chrs = input.as_bytes();
@@ -30,15 +38,20 @@ impl ListEl {
                 if acc.len() > 0 {
                     let s = String::from_utf8(acc).unwrap().parse::<i32>().unwrap();
                     acc = vec![];
+
                     if lvl > 1 {
+                        // Not at the root level, store the result to the working stack
                         working_stack.push((lvl, ListEl::Num(s)));
                     } else {
+                        // At root, just store the value as is
                         root.push(ListEl::Num(s));
                     }
                 }
 
                 if c == b']' {
                     if lvl > 1 {
+                        // Not at the root level and about to leave this depth/level
+                        // reduce the value into a single element
                         let mut nest = vec![];
                         while let Some(last_item) = working_stack.last() {
                             if last_item.0 != lvl {
@@ -50,8 +63,12 @@ impl ListEl {
                         nest.reverse();
 
                         if lvl > 2 {
+                            // Currently at the level deeper than 2, store the reduced value to the working stack
+                            // using the parent level (1-level above)
                             working_stack.push((lvl - 1, ListEl::Nest(nest)));
                         } else {
+                            // At level 2
+                            // parent is root, just commit/store the reduced value to the root since we are going back to root
                             root.push(ListEl::Nest(nest));
                         }
                     }
