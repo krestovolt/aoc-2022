@@ -29,34 +29,69 @@ pub fn run(input: Lines<impl BufRead>) {
     }
 
     let mut distress_beacon = [-1_isize, -1_isize];
-    for y in 0..=Y_MAX {
-        let segments = create_segments(y, &sensors);
-        let mut tentative_x = 0_isize;
+    // trying to refactor using this approach
+    // https://www.reddit.com/r/adventofcode/comments/zmfwg1/2022_day_15_part_2_seekin_for_the_beacon
+    //
+    // and this
+    // https://github.com/tdpetrou/Advent-of-Code-Pandas/blob/master/2022/Problems.ipynb
+    let bounds = sensors
+        .iter()
+        .map(|s| {
+            let d = s.be_dist;
+            let top = [s.pos[0], s.pos[1] - d - 1];
+            let right = [s.pos[0] + d + 1, s.pos[1]];
+            let bottom = [s.pos[0], s.pos[1] + d + 1];
+            let left = [s.pos[0] - d - 1, s.pos[1]];
 
-        let mut found_valid_pos = true;
+            [top, right, bottom, left]
+        })
+        .collect::<Vec<_>>();
 
-        for s in segments.iter() {
-            if s[0] <= tentative_x && tentative_x <= s[1] {
-                // Move potential x coord to the outside of current segment
-                tentative_x = s[1] + 1;
+    let perimeter_move: [[isize; 2]; 4] = [[1, 1], [-1, 1], [-1, -1], [1, -1]];
 
-                if tentative_x > Y_MAX {
-                    found_valid_pos = false;
+    let in_radius = |p1: isize, p2: isize, d: isize| -> bool { (p1 - p2).abs() < d };
+    let point_valid = |x: isize, y: isize| -> bool { 0 <= x && x <= Y_MAX && 0 <= y && y <= Y_MAX };
+
+    for bi in 0..bounds.len() {
+        let sdist = sensors[bi].be_dist;
+        let dirs = &bounds[bi];
+
+        for (p, m) in dirs.iter().zip(perimeter_move.iter()) {
+            let mut pc = p.clone();
+
+            while point_valid(pc[0], pc[1]) && in_radius(pc[0], p[0], sdist) {
+                let mut mdist = sensors
+                    .iter()
+                    .map(|s| {
+                        let d_to_pc = (s.pos[0] - pc[0]).abs() + (s.pos[1] - pc[1]).abs();
+                        s.be_dist - d_to_pc
+                    })
+                    .max()
+                    .unwrap();
+
+                if mdist < 0 {
+                    distress_beacon[0] = pc[0];
+                    distress_beacon[1] = pc[1];
                     break;
+                } else {
+                    // center/scaling factor for new pos
+                    mdist = (mdist / 2).max(1);
                 }
+                pc[0] = pc[0] + m[0] * mdist;
+                pc[1] = pc[1] + m[1] * mdist
             }
-        }
-
-        if found_valid_pos {
-            distress_beacon[0] = tentative_x;
-            distress_beacon[1] = y;
-            break;
         }
     }
 
     println!("covered at y={pos_y} : {covered_area}");
-    println!("distress beacon at ({}, {})", distress_beacon[0], distress_beacon[1]);
-    println!("tuning frequency = {}", distress_beacon[0] * Y_MAX + distress_beacon[1]);
+    println!(
+        "distress beacon at ({}, {})",
+        distress_beacon[0], distress_beacon[1]
+    );
+    println!(
+        "tuning frequency = {}",
+        distress_beacon[0] * Y_MAX + distress_beacon[1]
+    );
 }
 
 fn create_segments(pos_y: isize, sensors: &[SensorInfo]) -> Vec<[isize; 2]> {
