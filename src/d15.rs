@@ -1,7 +1,4 @@
-use std::{
-    collections::{hash_map::Entry, HashMap},
-    io::{BufRead, Lines},
-};
+use std::io::{BufRead, Lines};
 
 const Y_MAX: isize = 4000000;
 
