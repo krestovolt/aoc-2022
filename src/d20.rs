@@ -1,4 +1,7 @@
-use std::io::{BufRead, Lines};
+use std::{
+    collections::VecDeque,
+    io::{BufRead, Lines},
+};
 
 use crate::common;
 
@@ -7,14 +10,14 @@ pub fn run(input: Lines<impl BufRead>) {
 
     let (nums, indexes) = process(&lines);
 
-    let key = 1;
-    let iter = 1;
-    let triplet_seq = decrypt(&nums, indexes.clone(), iter, key);
-    let sum_nums = triplet_seq.iter().sum::<i128>();
-    println!(
-        "sum from {:?} (iter={iter}, key={key}) = {}",
-        triplet_seq, sum_nums
-    );
+    // let key = 1;
+    // let iter = 1;
+    // let triplet_seq = decrypt(&nums, indexes.clone(), iter, key);
+    // let sum_nums = triplet_seq.iter().sum::<i128>();
+    // println!(
+    //     "sum from {:?} (iter={iter}, key={key}) = {}",
+    //     triplet_seq, sum_nums
+    // );
 
     let key = 811589153;
     let iter = 10;
@@ -34,12 +37,13 @@ fn decrypt(
 ) -> Vec<i128> {
     let indexes = &mut indexes;
     let len = nums.len();
+
     for _iter in 0..iteration {
         for num_i in 0..len {
             let num_pos = indexes.iter().position(|idx| *idx == num_i).unwrap() as i128;
             let num_val = (nums[num_i] as i128) * decryption_key;
 
-            let modulo = (len as i128) - 1;
+            let modulo = (len as i128) - 1; // minus one because the calculated length for the list when 1 item removed
             let fut_index = num_pos + num_val;
             let fut_index = if fut_index < 0 {
                 let a = fut_index;
