@@ -1,0 +1,39 @@
+root: pppw + sjmn
+dbpl: 5
+cczh: sllz + lgvd
+zczc: 2
+ptdq: humn - dvpt
+dvpt: 3
+lfqf: 4
+humn: 5
+ljgn: 2
+sjmn: drzm * dbpl
+sllz: 4
+pppw: cczh / lfqf
+lgvd: ljgn * ptdq
+drzm: hmdt - zczc
+hmdt: 32
+
+
+150 = (4 + 2 * (<humn> - 3)) / 4
+(((150 * 4) - 4) / 2) + 3
+600 - 4 = 596
+596 / 2 = 298
+297 + 3 = 301
+
+non-commutative inverse
+a = b / c
+b / a = c
+a * c = b
+ex: 
+4 = 8 / 2
+8 / 4 = 2
+4 * 2 = 8
+
+a = b - c
+b - a = c
+a + c = b
+ex: 
+6 = 8 - 2
+8 - 6 = 2
+6 + 2 = 8
