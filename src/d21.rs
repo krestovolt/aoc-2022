@@ -103,31 +103,28 @@ pub fn run(input: Lines<impl BufRead>) {
                 let val_is_lhs = position == 0;
                 if val_is_lhs {
                     let r = op.eval(val, humn_val);
-                    println!("[NOT] {r} = val({val})({:?})humn_val({humn_val})", op);
+                    // println!("[NOT] {r} = val({val})({:?})humn_val({humn_val})", op);
                     r
                 } else {
                     let r = op.inv().eval(humn_val, val);
-                    println!("[INV] {r} = humn_val({humn_val})({:?})val({val})", op.inv());
+                    // println!("[INV] {r} = humn_val({humn_val})({:?})val({val})", op.inv());
                     r
                 }
             }
 
             Expr::Add | Expr::Multiply => {
                 let r = op.inv().eval(humn_val, val);
-                println!("[INV] {r} = humn_val({humn_val})({:?})val({val})", op.inv());
+                // println!("[INV] {r} = humn_val({humn_val})({:?})val({val})", op.inv());
                 r
             }
 
             _ => unimplemented!(),
         };
 
-        let new_humn_val = a;
-        // let new_humn_val = new_inv_op.eval(humn_val, val.0);
-
-        humn_val = new_humn_val;
+        humn_val = a;
     }
 
-    println!("{}={}", eval_map["gvhs"], eval_map["bzrn"]);
+    // println!("{}={}", eval_map["gvhs"], eval_map["bzrn"]);
 
     println!("humn = {}", humn_val);
 }
@@ -140,6 +137,7 @@ fn compute(
     let mut dependen_hmn: HashMap<String, usize> = HashMap::new();
     dependen_hmn.insert("humn".into(), 0);
 
+    // Topological Sorting part
     {
         let mut graph = HashMap::<String, (Expr, HashMap<String, u8>)>::new();
         for node in deps.iter() {
@@ -180,30 +178,33 @@ fn compute(
 
     let mut eval_res = HashMap::<String, i64>::new();
 
-    for node in topo_sorted.iter() {
-        let dep = deps.get(node).unwrap();
-        if dep.1.is_empty() {
-            eval_res.insert(node.into(), dep.0.get_val().unwrap());
-        } else {
-            let mut di = dep.1.iter();
-            let node_a = di.next().unwrap();
-            let node_b = di.next().unwrap();
-
-            let val_lhs = if *node_a.1 == 0 {
-                eval_res.get(node_a.0).copied().unwrap()
+    // Evaluating expression based on topo-sorted order
+    {
+        for node in topo_sorted.iter() {
+            let dep = deps.get(node).unwrap();
+            if dep.1.is_empty() {
+                eval_res.insert(node.into(), dep.0.get_val().unwrap());
             } else {
-                eval_res.get(node_b.0).copied().unwrap()
-            };
+                let mut di = dep.1.iter();
+                let node_a = di.next().unwrap();
+                let node_b = di.next().unwrap();
 
-            let val_rhs = if *node_b.1 == 1 {
-                eval_res.get(node_b.0).copied().unwrap()
-            } else {
-                eval_res.get(node_a.0).copied().unwrap()
-            };
+                let val_lhs = if *node_a.1 == 0 {
+                    eval_res.get(node_a.0).copied().unwrap()
+                } else {
+                    eval_res.get(node_b.0).copied().unwrap()
+                };
 
-            let val = dep.0.eval(val_lhs, val_rhs);
+                let val_rhs = if *node_b.1 == 1 {
+                    eval_res.get(node_b.0).copied().unwrap()
+                } else {
+                    eval_res.get(node_a.0).copied().unwrap()
+                };
 
-            eval_res.insert(node.into(), val);
+                let val = dep.0.eval(val_lhs, val_rhs);
+
+                eval_res.insert(node.into(), val);
+            }
         }
     }
 
