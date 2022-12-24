@@ -1,5 +1,5 @@
 use std::{
-    collections::{BTreeSet, HashMap, HashSet, VecDeque},
+    collections::{HashMap, HashSet},
     io::{BufRead, Lines},
 };
 
@@ -80,7 +80,7 @@ impl Bliz {
         };
 
         if next_pos.1 == 0 || next_pos.0 == 0 {
-            println!("error");
+            panic!("Blizzard cannot be at wall position");
         }
 
         self.x = next_pos.0;
@@ -101,32 +101,20 @@ const ACTIONS: [Action; 5] = [
 pub fn run(input: Lines<impl BufRead>) {
     let lines = common::parse(input);
 
-    let grid_state = process(&lines);
-    let start = grid_state.2;
-    let goal = grid_state.3;
+    let (width, height, start, goal, new_bliz, new_tile_freq) = process(&lines);
 
-    let (minimum_step_1, new_bliz, new_tile_freq) = simulate(&grid_state);
+    let (minimum_step_1, new_bliz, new_tile_freq) =
+        simulate(&(width, height, start, goal, new_bliz, new_tile_freq));
     println!("1st Start to Goal = {minimum_step_1}");
 
-    let (minimum_step_2, new_bliz, new_tile_freq) = simulate(&(
-        grid_state.0,
-        grid_state.1,
-        goal,
-        start,
-        new_bliz,
-        new_tile_freq,
-    ));
+    let (minimum_step_2, new_bliz, new_tile_freq) =
+        simulate(&(width, height, goal, start, new_bliz, new_tile_freq));
     println!("2nd Goal to Start = {minimum_step_2}");
 
-    let (minimum_step_3, _new_bliz, _new_tile_freq) = simulate(&(
-        grid_state.0,
-        grid_state.1,
-        start,
-        goal,
-        new_bliz,
-        new_tile_freq,
-    ));
+    let (minimum_step_3, _new_bliz, _new_tile_freq) =
+        simulate(&(width, height, start, goal, new_bliz, new_tile_freq));
     println!("3rd Start to Goal = {minimum_step_3}");
+
     println!(
         "total minimum step = {}",
         minimum_step_1 + minimum_step_2 + minimum_step_3
@@ -161,7 +149,8 @@ fn simulate(
     };
 
     let mut action_q = HashSet::<(i32, i32)>::new();
-    action_q.insert(start.clone());
+    let mut action_tmp_q = HashSet::<(i32, i32)>::new();
+    action_q.insert(start);
 
     while !action_q.contains(&goal) {
         t += 1;
@@ -173,20 +162,18 @@ fn simulate(
             *tile_bliz_freq.entry(cur_pos).or_insert_with(|| 0) += 1;
         }
 
-        let mut new_action_q = HashSet::<(i32, i32)>::new();
-        for pos in action_q {
+        // Search valid movement after all of the blizzards moved
+        for pos in action_q.drain() {
             for act in ACTIONS.iter() {
                 let (_old_pos, new_pos) = act.do_action(&pos);
-                if valid_pos(new_pos) && tile_bliz_freq.get(&new_pos).copied().unwrap_or(0) == 0 {
-                    new_action_q.insert(new_pos);
+
+                let num_of_blizz = tile_bliz_freq.get(&new_pos).copied().unwrap_or(0);
+                if valid_pos(new_pos) && num_of_blizz == 0 {
+                    action_tmp_q.insert(new_pos);
                 }
             }
         }
-        action_q = new_action_q;
-
-        if t % 10 == 0 {
-            println!("t={t}")
-        }
+        action_q.extend(action_tmp_q.drain());
     }
 
     (t, blizs, tile_bliz_freq)
