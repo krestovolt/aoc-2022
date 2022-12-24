@@ -140,7 +140,136 @@ impl Hash for Point {
     }
 }
 
-struct Cube {}
+// DOWN, RIGHT, UP, LEFT (counter-clockwise move)
+const CUBE_DX: &[isize; 4] = &[0, 1, 0, -1];
+const CUBE_DY: &[isize; 4] = &[1, 0, -1, 0];
+struct Cube {
+    cube_side_size: usize,
+    quad_region_ids: HashMap<(usize, usize), usize>,
+    cube_face_move_map: [[(usize, usize); 4]; 6],
+}
+
+impl Cube {
+    fn new(input_width: usize, input_height: usize, grid_points: &Vec<Vec<(Point, Tile)>>) -> Self {
+        // Cube size is the biggest common factor of input dimension
+        let cube_side_size = common::gcd(input_width, input_height);
+
+        // (2, 0) Some(Point { x: 9, y: 1 }) Some(Point { x: 12, y: 4 })
+        // (0, 1) Some(Point { x: 1, y: 5 }) Some(Point { x: 4, y: 8 })
+        // (1, 1) Some(Point { x: 5, y: 5 }) Some(Point { x: 8, y: 8 })
+        // (2, 1) Some(Point { x: 9, y: 5 }) Some(Point { x: 12, y: 8 })
+        // (2, 2) Some(Point { x: 9, y: 9 }) Some(Point { x: 12, y: 12 })
+        // (3, 2) Some(Point { x: 13, y: 9 }) Some(Point { x: 16, y: 12 })
+        // | cube layout in sample input
+        // | --------------
+        // |        |20|
+        // | --------------
+        // |  |01|11|21|
+        // | --------------
+        // |        |22|32|
+        // | --------------
+        // --------------------
+        // | cube layout in real input
+        // | --------------
+        // |     |10|20|
+        // | --------------
+        // |     |11|
+        // | --------------
+        // |  |02|12|
+        // | --------------
+        // |  |03|
+        // | --------------
+        let mut quad_region_ids = HashMap::<(usize, usize), usize>::new();
+        for row_els in grid_points.iter() {
+            for (pt, _) in row_els.iter() {
+                let key = Cube::get_face_index(pt.x, pt.y, cube_side_size);
+                let id_len = quad_region_ids.len();
+
+                quad_region_ids.entry(key.clone()).or_insert_with(|| id_len);
+            }
+        }
+
+        // Stitching each cube's face, something like the comments above
+        let mut quads_move = [[Option::<(usize, usize)>::None; 4]; 6];
+        let mut rem_side = 6 * 4;
+        for ((x, y), qid) in quad_region_ids.iter() {
+            for d in 0..4 {
+                let nx = *x as isize + CUBE_DX[d];
+                let ny = *y as isize + CUBE_DY[d];
+                if nx < 0 || ny < 0 {
+                    continue;
+                }
+
+                if let Some(&sqid) = quad_region_ids.get(&(nx as usize, ny as usize)) {
+                    assert_ne!(*qid, sqid);
+
+                    quads_move[*qid][d] = Some((sqid, d));
+
+                    rem_side -= 1;
+                }
+            }
+        }
+
+        while rem_side > 0 {
+            for sid in 0..6 {
+                for dir in 0..4 {
+                    if quads_move[sid][dir].is_some() {
+                        continue;
+                    }
+
+                    // reverse
+                    let rdi = (dir + 3) % 4;
+
+                    if let Some((direct_adj_face, access_dir)) = quads_move[sid][rdi] {
+                        let rot_dir = (access_dir + 1) % 4;
+
+                        if let Some((new_adj_face, origin_access_dir)) =
+                            quads_move[direct_adj_face][rot_dir]
+                        {
+                            let dir_perspective = (origin_access_dir + 3) % 4;
+                            quads_move[sid][dir] = Some((new_adj_face, dir_perspective));
+                            rem_side -= 1;
+                        }
+                    }
+                }
+            }
+        }
+
+        let cube_face_move_map = {
+            let mut fmap = [[(0, 0); 4]; 6];
+            for si in 0..6 {
+                for di in 0..4 {
+                    fmap[si][di] = quads_move[si][di].unwrap();
+                }
+            }
+            fmap
+        };
+
+        const DIR_NAME: [char; 4] = ['D', 'R', 'U', 'L'];
+        for (reg, face_id) in quad_region_ids.iter() {
+            let movement_map = &cube_face_move_map[*face_id];
+            println!("face#{} {:?} :", face_id, *reg);
+            for dir in 0..4 {
+                let (dest_face_id, dir_new_perspective) = movement_map[dir];
+                println!(
+                    "{} -> face#{dest_face_id} looking {}",
+                    DIR_NAME[dir], DIR_NAME[dir_new_perspective]
+                );
+            }
+            println!("{:=>10}", "");
+        }
+
+        Self {
+            cube_side_size,
+            cube_face_move_map,
+            quad_region_ids,
+        }
+    }
+
+    fn get_face_index(x: usize, y: usize, size: usize) -> (usize, usize) {
+        ((x - 1) / size, (y - 1) / size)
+    }
+}
 
 pub fn run(mut input: Lines<impl BufRead>) {
     let line_map = common::parse_mut(&mut input);
@@ -148,7 +277,7 @@ pub fn run(mut input: Lines<impl BufRead>) {
 
     let state = process(&line_map, &line_moves);
 
-    let x = walking_warp(&state);
+    let x = walking_warp(&(state.0, state.1, state.2));
 
     println!("x = {x}");
 }
@@ -189,7 +318,7 @@ fn walking_warp(state: &(Point, HashMap<Point, Tile>, Vec<Move>)) -> usize {
     (1000 * cur_pos.y) + (4 * cur_pos.x) + cur_dir.value()
 }
 
-fn process(lmap: &[String], lmov: &[String]) -> (Point, HashMap<Point, Tile>, Vec<Move>) {
+fn process(lmap: &[String], lmov: &[String]) -> (Point, HashMap<Point, Tile>, Vec<Move>, Cube) {
     let mut v = vec![];
     let mut pmap = HashMap::<Point, Tile>::new();
     let mut start = None;
@@ -244,117 +373,7 @@ fn process(lmap: &[String], lmov: &[String]) -> (Point, HashMap<Point, Tile>, Ve
 
     //// Cube pre-processing (folding)
     let start = start.expect("Not None");
-    // Cube size is the biggest common factor of input dimension
-    let cube_size = common::gcd(width, height);
+    let cube = Cube::new(width, height, &v);
 
-    let mut quad_ids = HashMap::<(usize, usize), usize>::new();
-    let mut cube_face_index = BTreeMap::<(usize, usize), Vec<Point>>::new();
-    for vv in v.iter() {
-        for (pt, _) in vv.iter() {
-            let key = ((pt.x - 1) / cube_size, (pt.y - 1) / cube_size);
-            (*cube_face_index.entry(key.clone()).or_insert(vec![])).push(pt.clone());
-
-            let id_len = quad_ids.len();
-            quad_ids.entry(key.clone()).or_insert_with(|| id_len);
-        }
-    }
-
-    // Direction cycle counter-clock-wise starting from DOWN(0) -> RIGHT(1) -> UP(2) -> LEFT(3)
-    const DX: &[isize; 4] = &[0, 1, 0, -1];
-    const DY: &[isize; 4] = &[1, 0, -1, 0];
-
-    // (2, 0) Some(Point { x: 9, y: 1 }) Some(Point { x: 12, y: 4 })
-    // (0, 1) Some(Point { x: 1, y: 5 }) Some(Point { x: 4, y: 8 })
-    // (1, 1) Some(Point { x: 5, y: 5 }) Some(Point { x: 8, y: 8 })
-    // (2, 1) Some(Point { x: 9, y: 5 }) Some(Point { x: 12, y: 8 })
-    // (2, 2) Some(Point { x: 9, y: 9 }) Some(Point { x: 12, y: 12 })
-    // (3, 2) Some(Point { x: 13, y: 9 }) Some(Point { x: 16, y: 12 })
-    // # cube sample
-    // # --------------
-    // #        |20|
-    // # --------------
-    // #  |01|11|21|
-    // # --------------
-    // #        |22|32|
-    // # --------------
-
-    // (1, 0) Some(Point { x: 51, y: 1 }) Some(Point { x: 100, y: 50 })
-    // (2, 0) Some(Point { x: 101, y: 1 }) Some(Point { x: 150, y: 50 })
-    // (1, 1) Some(Point { x: 51, y: 51 }) Some(Point { x: 100, y: 100 })
-    // (0, 2) Some(Point { x: 1, y: 101 }) Some(Point { x: 50, y: 150 })
-    // (1, 2) Some(Point { x: 51, y: 101 }) Some(Point { x: 100, y: 150 })
-    // (0, 3) Some(Point { x: 1, y: 151 }) Some(Point { x: 50, y: 200 })
-    // # cube real input
-    // # --------------
-    // #     |10|20|
-    // # --------------
-    // #     |11|
-    // # --------------
-    // #  |02|12|
-    // # --------------
-    // #  |03|
-    // # --------------
-
-    // Stitching each cube's face, something like the comments above
-    let mut quads_move = [[Option::<(usize, usize)>::None; 4]; 6];
-    let mut rem_side = 6 * 4;
-    for ((x, y), qid) in quad_ids.iter() {
-        for d in 0..4 {
-            let nx = *x as isize + DX[d];
-            let ny = *y as isize + DY[d];
-            if nx < 0 || ny < 0 {
-                continue;
-            }
-
-            if let Some(&sqid) = quad_ids.get(&(nx as usize, ny as usize)) {
-                assert_ne!(*qid, sqid);
-
-                quads_move[*qid][d] = Some((sqid, d));
-
-                rem_side -= 1;
-            }
-        }
-    }
-
-    while rem_side > 0 {
-        for sid in 0..6 {
-            for dir in 0..4 {
-                if quads_move[sid][dir].is_some() {
-                    continue;
-                }
-
-                // reverse
-                let rdi = (dir + 3) % 4;
-
-                if let Some((direct_adj_face, access_dir)) = quads_move[sid][rdi] {
-                    let rot_dir = (access_dir + 1) % 4;
-
-                    if let Some((new_adj_face, origin_access_dir)) =
-                        quads_move[direct_adj_face][rot_dir]
-                    {
-                        let dir_perspective = (origin_access_dir + 3) % 4;
-                        quads_move[sid][dir] = Some((new_adj_face, dir_perspective));
-                        rem_side -= 1;
-                    }
-                }
-            }
-        }
-    }
-
-    let cube_face_move_map = {
-        let mut fmap = [[(0, 0); 4]; 6];
-        for si in 0..6 {
-            for di in 0..4 {
-                fmap[si][di] = quads_move[si][di].unwrap();
-            }
-        }
-        fmap
-    };
-
-    for c in cube_face_index.iter() {
-        println!("{:?} {:?} {:?}", c.0, c.1.iter().min(), c.1.iter().max());
-    }
-    ////
-
-    (start, pmap, mov)
+    (start, pmap, mov, cube)
 }
